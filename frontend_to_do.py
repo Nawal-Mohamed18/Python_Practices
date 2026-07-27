@@ -33,8 +33,6 @@ def delete_task():
         listbox.delete(index)
         tasks.pop(index)
 # Buttons
-##button = tk.Button(window, text="Add Task", command=add_task)
-##button.pack(pady=10)
 
 button_frame = tk.Frame(window)
 button_frame.pack(pady=10)
