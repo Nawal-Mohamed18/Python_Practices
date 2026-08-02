@@ -12,6 +12,7 @@ const quizPanel = document.getElementById("quiz-panel");
 
 let careers = {};
 let questions = [];
+let quizCareers = [];
 let quizStep = 0;
 let quizAnswers = [];
 let selectedOption = null;
@@ -76,6 +77,19 @@ function renderPathDetail() {
   pathDetail.innerHTML = renderCareerDetail(career, { titleOverride });
 }
 
+function scoreAnswers(answers) {
+  const totals = Object.fromEntries(quizCareers.map((key) => [key, 0]));
+  questions.forEach((q, i) => {
+    const idx = answers[i];
+    if (idx == null || idx < 0 || idx >= q.options.length) return;
+    const scores = q.options[idx].scores || {};
+    Object.entries(scores).forEach(([career, points]) => {
+      if (career in totals) totals[career] += points;
+    });
+  });
+  return Object.entries(totals).sort((a, b) => b[1] - a[1]);
+}
+
 function renderQuiz() {
   if (quizStep >= questions.length) {
     submitQuiz();
@@ -126,24 +140,18 @@ function renderQuiz() {
   });
 }
 
-async function submitQuiz() {
-  quizPanel.innerHTML = `<p class="lede short">Finding your match…</p>`;
-  const res = await fetch("/api/quiz", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ answers: quizAnswers }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    quizPanel.innerHTML = `<p class="note">${data.error || "Something went wrong."}</p>`;
-    return;
-  }
+function submitQuiz() {
+  const ranked = scoreAnswers(quizAnswers);
+  const [bestKey, bestScore] = ranked[0];
+  const [secondKey, secondScore] = ranked[1];
+  const best = { ...careers[bestKey], key: bestKey, score: bestScore };
+  const second = { title: careers[secondKey].title, score: secondScore };
 
   quizPanel.innerHTML =
-    renderCareerDetail(data.best, {
-      intro: `Best match: <strong>${data.best.title}</strong> (score ${data.best.score}).`,
+    renderCareerDetail(best, {
+      intro: `Best match: <strong>${best.title}</strong> (score ${best.score}).`,
     }) +
-    `<p class="note"><strong>Also close:</strong> ${data.second.title} (score ${data.second.score}). You can open Path to a career to compare roadmaps.</p>
+    `<p class="note"><strong>Also close:</strong> ${second.title} (score ${second.score}). You can open Path to a career to compare roadmaps.</p>
      <div class="actions" style="margin-top:1rem">
        <button type="button" class="btn primary" id="retake">Retake questions</button>
      </div>`;
@@ -167,13 +175,15 @@ careerSelect.addEventListener("change", () => {
 
 otherInput.addEventListener("input", renderPathDetail);
 
-async function init() {
-  const [careersRes, questionsRes] = await Promise.all([
-    fetch("/api/careers"),
-    fetch("/api/questions"),
-  ]);
-  careers = await careersRes.json();
-  questions = await questionsRes.json();
+function init() {
+  const data = window.CAREER_DATA;
+  if (!data) {
+    quizPanel.innerHTML = `<p class="note">Missing career data. Refresh the page.</p>`;
+    return;
+  }
+  careers = data.careers;
+  questions = data.questions;
+  quizCareers = data.quizCareers;
 
   careerSelect.innerHTML = Object.entries(careers)
     .map(([key, c]) => `<option value="${key}">${c.title}</option>`)
