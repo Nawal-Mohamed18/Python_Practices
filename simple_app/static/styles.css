@@ -139,13 +139,18 @@ h1.brand {
   font-weight: 600;
 }
 
-.field select {
+.field select,
+.field input[type="text"] {
   font: inherit;
   padding: 0.7rem 0.85rem;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--ink);
+}
+
+.field input[type="text"]::placeholder {
+  color: rgba(61, 82, 72, 0.55);
 }
 
 .detail h2 {

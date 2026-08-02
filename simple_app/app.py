@@ -1,5 +1,7 @@
 """Career Path Finder — Flask web app."""
 
+import os
+
 from flask import Flask, jsonify, render_template, request
 
 from careers_data import CAREERS, QUESTIONS, score_answers
@@ -64,4 +66,6 @@ def api_quiz():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug)

@@ -5,6 +5,8 @@ const views = {
 };
 
 const careerSelect = document.getElementById("career-select");
+const otherField = document.getElementById("other-field");
+const otherInput = document.getElementById("other-input");
 const pathDetail = document.getElementById("path-detail");
 const quizPanel = document.getElementById("quiz-panel");
 
@@ -27,11 +29,19 @@ function showView(name) {
     renderQuiz();
   }
   if (name === "path") {
+    syncOtherField();
     renderPathDetail();
   }
 }
 
-function renderCareerDetail(career, { intro } = {}) {
+function syncOtherField() {
+  const isOther = careerSelect.value === "other";
+  otherField.hidden = !isOther;
+  if (!isOther) otherInput.value = "";
+}
+
+function renderCareerDetail(career, { intro, titleOverride } = {}) {
+  const title = titleOverride || career.title;
   const steps = career.path
     .map(
       (step, i) =>
@@ -41,7 +51,7 @@ function renderCareerDetail(career, { intro } = {}) {
 
   return `
     ${intro ? `<div class="banner">${intro}</div>` : ""}
-    <h2>${career.title}</h2>
+    <h2>${title}</h2>
     <p class="tagline">${career.tagline}</p>
     <p class="skills"><strong>Core skills</strong><br>${career.skills.join(" · ")}</p>
     <p><strong>Your path</strong></p>
@@ -56,7 +66,14 @@ function renderPathDetail() {
     pathDetail.innerHTML = "";
     return;
   }
-  pathDetail.innerHTML = renderCareerDetail(career);
+
+  let titleOverride;
+  if (key === "other") {
+    const custom = otherInput.value.trim();
+    titleOverride = custom ? `Other: ${custom}` : "Other";
+  }
+
+  pathDetail.innerHTML = renderCareerDetail(career, { titleOverride });
 }
 
 function renderQuiz() {
@@ -143,7 +160,12 @@ document.querySelectorAll("[data-go]").forEach((el) => {
   el.addEventListener("click", () => showView(el.dataset.go));
 });
 
-careerSelect.addEventListener("change", renderPathDetail);
+careerSelect.addEventListener("change", () => {
+  syncOtherField();
+  renderPathDetail();
+});
+
+otherInput.addEventListener("input", renderPathDetail);
 
 async function init() {
   const [careersRes, questionsRes] = await Promise.all([
